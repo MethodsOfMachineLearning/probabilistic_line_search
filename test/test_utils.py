@@ -6,6 +6,7 @@ Created on Wed Jul  6 16:12:54 2016
 
 @author: lballes
 """
+
 import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
