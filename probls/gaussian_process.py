@@ -74,7 +74,7 @@ class ProbLSGaussianProcess(object):
     # noise level adjusted, reset). After such manipulations, gp.update() has
     # to be called. Remember current best observation of exp. improvement
     self.ready = False
-    self.current_best = None
+    self.min_obs = None
   
   def reset(self):
     """Reset the GP, removing all previous observations.
@@ -95,7 +95,7 @@ class ProbLSGaussianProcess(object):
     self.LU_piv = None
     self.w = None
     
-    self.eta = None
+    self.min_obs = None
     self.ready = False
   
   def add(self, t, f, df, fvar=0.0, dfvar=0.0):
@@ -113,7 +113,7 @@ class ProbLSGaussianProcess(object):
     assert isinstance(dfvar, (float, np.float32, np.float64))
     
     self.ready = False
-    self.eta = None
+    self.min_obs = None
     
     self.N += 1
     self.ts.append(t)
@@ -413,15 +413,15 @@ class ProbLSGaussianProcess(object):
     
     # Find the observation with minimal posterior mean, if it has not yet been
     # computed by a previous call to this method
-    if self.eta is None:
-      self.eta = min(self.mu(tt) for tt in self.ts)
+    if self.min_obs is None:
+      self.min_obs = min(self.mu(tt) for tt in self.ts)
     
     # Compute posterior mean and variance at t
     m, v = self.mu(t), self.V(t)
     
     # Compute the two terms in the formula for EI and return the sum
-    t1 = 0.5 * (self.eta-m) * (1 + erf((self.eta-m)/np.sqrt(2.*v)))
-    t2 = np.sqrt(0.5*v/np.pi) * np.exp(-0.5*(self.eta-m)**2/v)
+    t1 = 0.5 * (self.min_obs-m) * (1 + erf((self.min_obs-m)/np.sqrt(2.*v)))
+    t2 = np.sqrt(0.5*v/np.pi) * np.exp(-0.5*(self.min_obs-m)**2/v)
     
     return t1 + t2
   
