@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Run probabilistic line search on an MNIST CNN.
+Run probabilistic line search on a MNIST example.
 """
 
 import os
@@ -11,11 +11,12 @@ import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets('data/mnist', one_hot=True)
 
-from models import mnist_2conv_2dense as model
 from probls.tensorflow_interface.interface_sgd import ProbLSOptimizerSGDInterface
 from probls.line_search import ProbLSOptimizer
 
 #### Specify training specifics here ##########################################
+#from models import mnist_2conv_2dense as model # Comment/uncomment to chose
+from models import mnist_mlp as model           # the model to run 
 num_steps = 4000
 batch_size = 256
 ###############################################################################
