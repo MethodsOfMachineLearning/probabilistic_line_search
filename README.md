@@ -38,7 +38,7 @@ sess = tf.Session()
 sess.run(tf.initialize_all_variables())
 for i in range(1e5):
   sess.run(sgd_step)
-```python
+```
 
 Usage is slightly different for the probabilistic line search optimizer. The
 TensorFlow interface (which is a TensorFlow Optimizer) and the "outer loop" of
@@ -47,14 +47,14 @@ the line search are separated. Import both
 ```python
 from probls.tensorflow_interface.interface_sgd import ProbLSOptimizerSGDInterface
 from probls.line_search import ProbLSOptimizer
-```python
+```
 
 Set up your model as usually and use the interface as follows:
 
 ```python
 opt_interface = ProbLSOptimizerSGDInterface()
 opt_interface.minimize(losses, var_list)
-```python
+```
 
 Note that you have to pass the vector of ``losses``, instead of an aggregated
 mean loss! You then have to start a TensorFlow session and pass it to the
@@ -63,7 +63,7 @@ interface
 ```python
 sess = tf.Session()
 opt_interface.register_session(sess)
-```python
+```
 
 ``opt_interface`` now takes control of the session and works a self-contained
 interface to TensorFlow. You can now initialize the line search object, passing
@@ -71,7 +71,7 @@ it ``opt_interface`` as its "objective".
 
 ```python
 opt_ls = ProbLSOptimizer(opt_interface)
-```python
+```
 
 ``opt_ls`` has two methods that are of interest for the end-user.
 ``opt_ls.prepare(*args)`` has to be called once to initialize the line search.
@@ -80,7 +80,7 @@ function evaluation). For both functions, ``*args`` are arguments passed to the
 ``opt_interface``, which can be used to pass a ``feed_dict`` (if you are feeding
 data via placeholders).
 
-Overall, it's just four extra lines of code and reads
+Overall, it's just five extra lines of code and reads
 
 ```python
 from probls.tensorflow_interface.interface_sgd import ProbLSOptimizerSGDInterface
@@ -99,7 +99,7 @@ opt_ls.prepare(feed_dict_if_applicable)
 
 for i in range(num_steps):
   print(opt_ls.proceed(feed_dict_if_applicable))
-```python
+```
 
 
 
