@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Jul  1 15:00:24 2016
+Probabilistic Line Search for Stochastic Optimization.
 
-@author: lballes
+[1] M. Mahsereci and P. Hennig. Probabilistic line searches for stochastic
+optimization. In Advances in Neural Information Processing Systems 28, pages
+181-189, 2015.
+
+@author: Lukas Balles [lballes@tuebingen.mpg.de]
 """
 
 import numpy as np
@@ -23,45 +27,48 @@ class ProbLSOptimizer(object):
     Inputs:
       :func: Interface to the objective function. We assume that it has three
           methods.          
-             - ``f, df, fvar, dfvar = func.adv_eval(dt)`` to proceed along the current search
-               direction by an increment ``dt``, returning function value, 
-               projected gradient and variance estimates for both.
+             - ``f, df, fvar, dfvar = func.adv_eval(dt)`` to proceed along the
+               current search direction by an increment ``dt``, returning
+               function value, projected gradient and variance estimates for
+               both.
              - ``f, df, fvar, dfvar = func.accept()`` to accept the current
                step size, returning function value, projected gradients and an
                estimate of the variance of these two quantities.
-             - ``f, df, fvar, dfvar = func.prepare()`` to prepare the
-               interface, returning an initial observation of function value and
-               gradient, as well as the variances.
+             - ``f, df, fvar, dfvar = func.prepare()`` to prepare the interface
+               returning an initial observation of function value and gradient,
+               as well as the variances.
           If the function interface takes additional arguments (e.g. a feed
           dict with a batch of data in tensorflow), those are passed as
           positional arguments ``*pass_to_func_args``. 
       :c1: Scalar parameters for the first Wolfe conditions. Default to 0.05.
       :cW: Acceptance threshold for the Wolfe probability. Defaults to 0.3.
       :fpush: Push factor that is multiplied with the accepted step size to get
-          the base step size for the next line search.
-      :alpha0: Initial step size. Defaults to 0.03.
-      :target_df: The desired value for the relative projected gradient. Defaults
-          to 0.5.
+          the base step size for the next line search. Defaults to 1.0.
+      :alpha0: Initial step size. Defaults to 0.01.
+      :target_df: The target value for the relative projected gradient
+          df(t)/abs(df(0)). Defaults to 0.5.
       :df_lo, df_hi: Lower and higher threshold for the relative projected
-          gradient. Default to -0.1 and 1.1.
-      :max_steps: Maximum number of steps (function evaluations) per line search.
-          Defaults to 5.
-      :max_epl: Maximum number of exploration steps per line search. Defaults to
-          3.
+          gradient df(t)/abs(df(0)). Default to -0.1 and 1.1.
+      :max_steps: Maximum number of steps (function evaluations) per line
+          search. Defaults to 10.
+      :max_epl: Maximum number of exploration steps per line search. Defaults
+          to 6.
       :max_dmu0: If the posterior derivative at t=0 exceeds ``max_dmu0``, the
-          current line search is aborted. This is a safeguard against bad search
+          current line search is aborted as a safeguard against bad search
           directions. Defaults to 0.0.
       :max_change_factor: The algorithm usually takes the accepted alpha of the
           current line search as the base ``alpha0`` of the next one (after
-          multiplying with ``fpush``. However, if a line search accepts an alpha
-          that is more than ``max_change_factor`` times smaller or larger than
-          the current ``alpha0``, we instead set the next ``alpha0`` to a running
-          average of the accepted alphas (``alpha_stats``). Defaults to 10.0.
+          multiplying with ``fpush``). However, if a line search accepts an
+          alpha that is more than ``max_change_factor`` times smaller or larger
+          than the current ``alpha0``, we instead set the next ``alpha0`` to a
+          running average of the accepted alphas (``alpha_stats``). Defaults to
+          10.0.
       :expl_policy: String indicating the policy used for exploring points *to
-          the right* in the line search. If ``k`` is the number of exploration steps
-          already made, then the ``"linear"`` exploration policy chooses
-          ``2*(k+1)*alpha0`` as the next exploration candidate. The ``"exponential"``
-          policy chooses ``2**(k+1)*alpha0``. Defaults to ``"linear"``."""
+          the right* in the line search. If ``k`` is the number of exploration
+          steps already made, then the ``"linear"`` exploration policy chooses
+          ``2*(k+1)*alpha0`` as the next exploration candidate. The
+          ``"exponential"`` policy chooses ``2**(k+1)*alpha0``. Defaults to
+          ``"linear"``."""
     
     # Make sure the function_interface is valid and store it
     assert hasattr(func, "adv_eval")
@@ -117,26 +124,20 @@ class ProbLSOptimizer(object):
     dfvar = dfvar_raw/(self.df0**2)
     return f, df, fvar, dfvar
   
-  # LEGACY
-#  def scale_sigmas(self, sigma_f_raw, sigma_df_raw):
-#    """Scale the variance estimates. See section 3.4 of [1] for details."""
-#    
-#    sigma_f = sigma_f_raw/((self.alpha0*self.df0)**2)
-#    sigma_df = sigma_df_raw/(self.df0**2)
-#    return sigma_f, sigma_df
-  
   def rescale_t(self, t):
     """Rescale a step size used internally by multiplying with the base step
     size."""
     
     return t*self.alpha0
   
-  def rescale_obs(self, f, df):
-    """Rescale ab observation to real-world scale."""
+  def rescale_obs(self, f, df, fvar, dfvar):
+    """Rescale an observation to real-world scale."""
     
     f_raw = f*self.df0*self.alpha0 + self.f0
     df_raw = df*self.df0
-    return f_raw, df_raw
+    fvar_raw = fvar*(self.alpha0*self.df0)**2
+    dfvar_raw = dfvar*self.df0**2
+    return f_raw, df_raw, fvar_raw, dfvar_raw
   
   def prepare(self, *pass_to_func_args):
     """Preparation.
@@ -210,15 +211,17 @@ class ProbLSOptimizer(object):
                                                             *pass_to_func_args)
     
     # Safeguard against inf or nan encounters. Trigerring abort.
-    if np.isnan(f_raw) or np.isinf(f_raw):
+    if np.isnan(f_raw) or np.isinf(f_raw) or np.isnan(df_raw) or np.isinf(df_raw):
       f_raw = 100.0
-#      self.abort_status = 1 # Previously, we aborted when encountering inf / nan. Now we just put a high function value / gradient and go on. Is this the right thing to do? Which values?
-    if np.isnan(df_raw) or np.isinf(df_raw):
       df_raw = 10.0
-#      self.abort_status = 1
+      self.abort_status = 1
     
     # Scale the observations, add it to the GP and update the GP
+    # We are currently using the variance estimates from t=0 for all
+    # observations, but this might change in the future
     f, df, fvar, dfvar = self.scale_obs(f_raw, df_raw, fvar_raw, dfvar_raw)
+    fvar = self.gp.fvars[0]
+    dfvar = self.gp.dfvars[0]
     self.gp.add(t, f, df, fvar, dfvar)
     self.gp.update()
   
@@ -227,8 +230,8 @@ class ProbLSOptimizer(object):
     
     assert self.num_steps >= 1
     
-    # Generate candidates: Minima of the piece-wise cubic posterior mean plus
-    # one exploration point (2**k for several exploration steps in one search)
+    # Generate candidates: the points where the derivative of the posterior
+    # mean equals the target value plus one exploration point to the right.
     candidates = self.gp.find_dmu_equal(self.target_df)
     if self.expl_policy == "linear":
       candidates.append(2.*(self.num_expl+1))
@@ -236,7 +239,7 @@ class ProbLSOptimizer(object):
       candidates.append(2.**(self.num_expl+1))
     else:
       raise Exception("Unknown exploration policy")
-    print "\t * Computing utilities for candidates", candidates
+    print "\t * Computing utilities for candidates %s", candidates
     
     # Compute p_Wolfe for candidates
     pws = [self.compute_p_wolfe(t) for t in candidates]
@@ -254,15 +257,18 @@ class ProbLSOptimizer(object):
   def find_abort_t(self):
     """Find the step size to use for an abort."""
     
-    ts = self.gp.ts
-    pws = [self.compute_p_wolfe(t) for t in ts]
-    if max(pws) > 0.5*self.cW:
-      t = ts[np.argmax(pws)]
-    else:
-      t = 0.0
-    offset = 0.01
-    
-    return t + offset
+    return 0.01
+# We are currently simply aborting with a very small step, but we might do
+# something like this:
+#    ts = self.gp.ts
+#    pws = [self.compute_p_wolfe(t) for t in ts]
+#    if max(pws) > 0.5*self.cW:
+#      t = ts[np.argmax(pws)]
+#    else:
+#      t = 0.0
+#    offset = 0.01
+#    
+#    return t + offset
   
   def compute_p_wolfe(self, t):
     # Already changed dCov and Covd here
@@ -366,7 +372,8 @@ class ProbLSOptimizer(object):
       self.evaluate(t_new, *pass_to_func_args)
     
     # Return the real-world function value
-    f, _ = self.rescale_obs(self.gp.fs[-1], self.gp.dfs[-1])    
+    f, _, _, _ = self.rescale_obs(self.gp.fs[-1], self.gp.dfs[-1],
+                                  self.gp.fvars[-1], self.gp.dfvars[-1])    
     return f
   
   def proceed_constant_step(self, alpha, *pass_to_func_args):
@@ -395,9 +402,10 @@ class ProbLSOptimizer(object):
     and p_Wolfe.
     
     ``ax`` is a matplotlib axis."""
+    
     a, b = min(self.gp.ts), max(self.gp.ts)
     lo = a - .05*(b-a)
-    up = b + (b-a) #.05*(b-a)   
+    up = b + (b-a)  
     tt = np.linspace(lo, up, num=1000)
     ei = [self.gp.expected_improvement(t) for t in tt]
     pw = [self.compute_p_wolfe(t) for t in tt]
