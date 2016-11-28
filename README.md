@@ -102,10 +102,14 @@ opt_ls = ProbLSOptimizer(opt_interface)
 opt_ls.prepare(feed_dict_if_applicable)
 
 for i in range(num_steps):
-  print(opt_ls.proceed(feed_dict_if_applicable))
+  opt_ls.proceed(feed_dict_if_applicable)
 ```
 
 See the ``examples/`` for demo scripts.
+
+## Guide to this Implementation
+
+Coming soon...
 
 
 
