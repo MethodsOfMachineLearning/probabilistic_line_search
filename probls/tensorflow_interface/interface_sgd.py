@@ -2,10 +2,6 @@
 """
 TensorFlow optimizer that acts as an interface for the probabilistic line
 search algorithm.
-
-Created on Tue Jul 26 15:23:49 2016
-
-@author: Lukas Balles [lballes@tuebingen.mpg.de]
 """
 
 import tensorflow as tf

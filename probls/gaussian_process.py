@@ -1,15 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Implements the Gaussian process functionality needed for "Probabilistc Line
-Searches for Stochastic Optimization" as introduced in [1].
-
-[1] M. Mahsereci and P. Hennig. Probabilistic line searches for stochastic
-optimization. In Advances in Neural Information Processing Systems 28, pages
-181-189, 2015
-
-Created on Wed Jun 29 14:14:18 2016
-
-@author: lballes
+Implements the Gaussian process functionality needed for the probabilistic
+line search algorithm.
 """
 
 import numpy as np

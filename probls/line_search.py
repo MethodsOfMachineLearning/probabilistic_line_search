@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Probabilistic Line Search for Stochastic Optimization.
+Implementation of Probabilistic Line Search for Stochastic Optimization [1].
 
 [1] M. Mahsereci and P. Hennig. Probabilistic line searches for stochastic
 optimization. In Advances in Neural Information Processing Systems 28, pages
 181-189, 2015.
-
-@author: Lukas Balles [lballes@tuebingen.mpg.de]
 """
 
 import numpy as np

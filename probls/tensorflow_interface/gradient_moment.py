@@ -22,15 +22,11 @@ individual gradients, i.e. the quantity
     MOM(W) = (1/n) * sum{i=1:n}[ dloss(w, d_i)**p ]
 
 without giving up the efficiency of batch processing. An applications of this
-is the computation of the gradient variance estimate in [1] and [2]. 
+is the computation of the gradient variance estimate in [1]. 
 
 [1] M. Mahsereci and P. Hennig. Probabilistic line searches for stochastic
 optimization. In Advances in Neural Information Processing Systems 28, pages
 181-189, 2015.
-
-Created on Tue Jul 26 15:24:58 2016
-
-@author: Lukas Balles [lballes@tuebingen.mpg.de]
 """
 
 import tensorflow as tf

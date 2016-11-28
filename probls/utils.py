@@ -1,10 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Utility functions.
-
-Created on Fri Jul  1 15:08:26 2016
-
-@author: lballes
+Utility functions for probabilistic line search algorithm.
 """
 
 import numpy as np

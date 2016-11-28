@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Aug  4 11:27:52 2016
-
-@author: lballes
+TensorFlow MNIST CNN model.
 """
 
 import tensorflow as tf
