@@ -73,7 +73,7 @@ See the ``examples/`` folder for working demo scripts.
 
 This implementation consists of two major components:
 - A line search class (``ProbLSOptimizer``). It performs the line search, i.e. it gathers observations, updates the GP model, decides where to evaluate next, et cetera. The ``ProbLSOptimizer`` takes as argument a ``func`` object that is the "interface" to the objective function. It assumes that this interface has certain methods for evaluating at new points or accepting the current one; see below.
-- The TensorFlow interface ``ProbLSOptimizerSGDInterface``. This can be used as the ``func`` argument for a ``ProbLSOptimizer`` and provides the necessary interface functions to use the line search to train your TensorFlow model.
+- The TensorFlow interface ``ProbLSOptimizerSGDInterface``. This can be used as the ``func`` argument for a ``ProbLSOptimizer`` and provides the necessary interface to use the line search to train your TensorFlow model.
 
 ### Line Search
 
@@ -93,18 +93,18 @@ It is assumend that ``func`` has three methods:
 The line search algorithm "communicates" with the objective function exclusively via these three methods.
 
 Other than ``func``, ``ProbLSOptimizer`` has no required arguments, most notably, no learning rate!
-The remaining arguments are design parameters of the line search algorithm.
+The remaining arguments are design parameters of the line search algorithm. See the docstring of ``ProbLSOptimizer`` a description of these parameters.
 
 ``opt_ls`` has two methods that are of interest for the end-user.
 - ``opt_ls.prepare(*pass_to_func_args)`` has to be called once to initialize the line search.
 - ``opt_ls.proceed(*pass_to_func_args)`` proceeds one step in the line search (i.e. one
 function evaluation). We call this method for however many steps we want to train the model. This is where
-the actual line search happens, so check its code (and that of the subroutines it calls) to get an idea of what is going on!
+the actual line search happens, so check out its code (and that of the subroutines it calls) to get an idea of what is going on!
 
 The Gaussian process functionality needed in the line search is outsourced to
 ``probls.gaussian_process``. It implements one-dimensional Gaussian process regression with an integrated
 Wiener process kernel that uses observations of both the function value and the
-derivative. For details, see the documentation of the ``probls.gaussian_process.ProbLSGaussianProcess`` class.
+derivative. For details, see the docstring of the ``ProbLSGaussianProcess`` class.
 
 ### TensorFlow Interface
 
@@ -124,7 +124,7 @@ Its ``minimize(losses, var_list)`` method adds to sets of operations to the Tens
 In order for the ``ProbLSOptimizerSGDInterface`` object to work as a self-contained
 interface that can perform function/gradient evaluations, you have to pass it a
 TensorFlow session via its ``register_session(sess)`` method. After that, the interface is
-ready to go and provides the three aforementioned methods ``adv_evl(dt, optional_feed_dict)``, ``accept()`` and ``prepare(optional_feed_dict)``.
+ready to go and provides the three aforementioned methods ``adv_eval(dt, optional_feed_dict)``, ``accept()`` and ``prepare(optional_feed_dict)``.
 
 A crucial part of the line search are within-batch estimates of the variance of the function 
 value and the gradient, see equations (17) and (18) in the [paper][1]. The variance
