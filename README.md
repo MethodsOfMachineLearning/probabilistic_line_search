@@ -2,7 +2,7 @@
 
 This is a Python implementation of a [Probabilistic Line Search for Stochastic
 Optimization][1] plus a TensorFlow interface that allows you to use the line
-search to train your TensorFlow model.
+search to train your TensorFlow model. **This an early development version!**
 
 ## The Algorithm in a Nutshell
 The probabilistic line search is an algorithm for the optimization of a
@@ -15,8 +15,7 @@ size, implied by the GP, exceeds a certain threshold.
 
 ## Installation
 
-This an early development version. No installation is required, just clone this
-git repositiory to your machine.
+No installation is required, just clone this git repositiory to your machine.
 
 Requirements:
 - tensorflow (0.10.0 is known to work)
@@ -54,7 +53,7 @@ var_list = ...
 losses = ... # A vector of losses, one for each example in the batch
 
 opt_interface = ProbLSOptimizerSGDInterface()
-opt_interface.minimize(losses, var_list)
+opt_interface.minimize(losses, var_list) # Note that we pass losses, not an aggregate mean loss
 sess = tf.Session()
 sess.run(tf.initialize_all_variables())
 opt_interface.register_session(sess)
@@ -66,89 +65,72 @@ for i in range(num_steps):
   opt_ls.proceed(feed_dict_if_applicable)
 ```
 
-*Why is That?*
-This is due to the fact that the implementation actually consists of two components:
-- A line search class (``ProbLSOptimizer``). It performs the line search, i.e. it gathers observations, updates the GP model, decides where to evaluate next, et cetera. The ``ProbLSOptimizer`` takes as argument a ``func`` object that is the "interface" to the objective function. It assumes that this interface has certain methods for evaluating at new points or accepting the current one; see the documentation of ``ProbLSOptimizer`` for details.
-- The TensorFlow interface ``ProbLSOptimizerSGDInterface``. This can be used as the ``func`` argument for a ``ProbLSOptimizer`` and provides the necessary interface functions to use the line search to train your TensorFlow model.
+The effects of these individual commands will become clear in the next section.
+See the ``examples/`` folder for working demo scripts.
 
-Hence, to use the line search to train a TensorFlow model, we first import the two aformentioned classes.
-
-```python
-from probls.tensorflow_interface.interface_sgd import ProbLSOptimizerSGDInterface
-from probls.line_search import ProbLSOptimizer
-```
-
-The function interface is set up by
-
-```python
-opt_interface = ProbLSOptimizerSGDInterface()
-opt_interface.minimize(losses, var_list)
-```
-
-(Note that you have to pass the vector of ``losses``, instead of an aggregated
-mean loss!) Next, we start a TensorFlow session and pass it to the interface
-
-```python
-sess = tf.Session()
-opt_interface.register_session(sess)
-```
-
-``opt_interface`` now uses this session to perform the evaluations and, thus, can work as a self-contained
-interface to the TensorFlow model. We now initialize the line search object, passing ``opt_interface`` as its objective.
-
-```python
-opt_ls = ProbLSOptimizer(opt_interface)
-```
-
-``opt_ls`` has two methods that are of interest for the end-user.
-- ``opt_ls.prepare(*args)`` has to be called once to initialize the line search.
-- ``opt_ls.proceed(*args)`` proceeds one step in the line search (i.e. one
-function evaluation). We call this method for however many steps we want to train the model.
-For both functions, ``*args`` are arguments passed to the objective ``func``, which can be used to pass a ``feed_dict`` to your ``opt_interface`` if you are feeding data via placeholders.
-
-
-See the ``examples/`` folder for working demo scripts with placeholders (MNIST) and without (CIFAR-10).
 
 ## Quick Guide to this Implementation
 
+This implementation consists of two major components:
+- A line search class (``ProbLSOptimizer``). It performs the line search, i.e. it gathers observations, updates the GP model, decides where to evaluate next, et cetera. The ``ProbLSOptimizer`` takes as argument a ``func`` object that is the "interface" to the objective function. It assumes that this interface has certain methods for evaluating at new points or accepting the current one; see below.
+- The TensorFlow interface ``ProbLSOptimizerSGDInterface``. This can be used as the ``func`` argument for a ``ProbLSOptimizer`` and provides the necessary interface functions to use the line search to train your TensorFlow model.
+
 ### Line Search
 
-The ``ProbLSOptimizer`` class is implemented in ``probls.line_search``. A line search object
-excepts a ``func`` argument, that acts as the interface to the objective function.
-It is assumend that it has three methods:
-- ``f, df, fvar, dfvar = func.adv_eval(dt, *pass_to_func_args)`` to proceed along the current search
-  direction by an increment ``dt``, returning function value, projected gradient
-  and variance estimates for both.
+The ``ProbLSOptimizer`` class is implemented in ``probls.line_search``. It
+excepts a ``func`` argument which acts as the interface to the objective function.
+It is assumend that ``func`` has three methods:
+- ``f, df, fvar, dfvar = func.adv_eval(dt, *args)`` to proceed along the current search
+  direction by an increment ``dt``, returning function value ``f``, projected gradient ``df``
+  and variance estimates for both (``fvar, dfvar``).
 - ``f, df, fvar, dfvar = func.accept()`` to accept the current step size,
   returning function value, projected gradients and an estimate of the variance
-  of these two quantities.
-- ``f, df, fvar, dfvar = func.prepare(*pass_to_func_args)`` to prepare the interface returning an
-  initial observation of function value and gradient, as well as the variances.
-If the function interface takes additional arguments (e.g. a feed_dict with a
-batch of data in for the TensorFlow interface), those are passed as positional
-arguments ``*pass_to_func_args``. The line search algorithm "communicates" with
-the objective function exclusively via these three methods.
+  of these two quantities (``df`` and ``dfvar`` with respect to the new search direction).
+- ``f, df, fvar, dfvar = func.prepare(*args)`` to prepare the interface returning an
+  initial observation.
 
-Other than that, ``ProbLSOptimizer`` has no required arguments (most notably, no learning rate).
+``*args`` are additional positional arguments, e.g.. an optional feed_dict in the case the TensorFlow interface; see below.
+The line search algorithm "communicates" with the objective function exclusively via these three methods.
+
+Other than ``func``, ``ProbLSOptimizer`` has no required arguments, most notably, no learning rate!
 The remaining arguments are design parameters of the line search algorithm.
 
-The Gaussian process functionality needed in the line search is implemented in
+``opt_ls`` has two methods that are of interest for the end-user.
+- ``opt_ls.prepare(*pass_to_func_args)`` has to be called once to initialize the line search.
+- ``opt_ls.proceed(*pass_to_func_args)`` proceeds one step in the line search (i.e. one
+function evaluation). We call this method for however many steps we want to train the model. This is where
+the actual line search happens, so check its code (and that of the subroutines it calls) to get an idea of what is going on!
+
+The Gaussian process functionality needed in the line search is outsourced to
 ``probls.gaussian_process``. It implements one-dimensional Gaussian process regression with an integrated
 Wiener process kernel that uses observations of both the function value and the
 derivative. For details, see the documentation of the ``probls.gaussian_process.ProbLSGaussianProcess`` class.
 
 ### TensorFlow Interface
 
-The TensorFlow interface is implemented in ``probls.tensorflow_interface.interface_sgd``.
-It can act as the ``func`` argument of the ``ProbLSOptimizer``, providing the
+The TensorFlow interface ``ProbLSOptimizerSGDInterface`` is implemented in ``probls.tensorflow_interface.interface_sgd``.
+It inherits from ``tf.train.Optimizer`` and implements the necessary functionality to serve as the ``func`` argument of the ``ProbLSOptimizer``, providing the
 desired interface to the objective function defined by your TensorFlow model.
+Its ``minimize(losses, var_list)`` method adds to sets of operations to the TensorFlow graph:
+- ``adv_eval_op``
+  Advance along the current search direction, compute the loss,
+  the gradients and variances of both. Gradient and its variance are stored
+  in slot variables. Return the loss ``f``, projected gradient ``df``,
+  variance of the loss fvar, and variance of the projected gradient dfvar
+- ``accept_op``:
+  Accept the current point. Set its gradient as the new search direction.
+  Returns f, df fvar and dfvar, where df and dfvar are now with respect to this new search direction.
 
-A crucial part of the line search are within-batch estimated of the function 
-value and the gradient, see equations (17) and (18) in [1]. Computing the gradient
-variance is a little tricky; details can be found in the following note: (coming soon...)
+In order for the ``ProbLSOptimizerSGDInterface`` object to work as a self-contained
+interface that can perform function/gradient evaluations, you have to pass it a
+TensorFlow session via its ``register_session(sess)`` method. After that, the interface is
+ready to go and provides the three aforementioned methods ``adv_evl(dt, optional_feed_dict)``, ``accept()`` and ``prepare(optional_feed_dict)``.
 
-To be continued...
-
-
+A crucial part of the line search are within-batch estimates of the variance of the function 
+value and the gradient, see equations (17) and (18) in the [paper][1]. The variance
+of the objective is easily computed given the individual loss values for the examples
+in the batch. That is why we pass the vector of ``losses``, instead of a mean ``loss``.
+Computing the gradient variance is a little tricky; a detailed explanation can be found in the following note: (coming soon...).
+For the implementation, see ``probls.tensorflow_interface.gradient_moment``.
 
 [1]: https://arxiv.org/abs/1502.02846
