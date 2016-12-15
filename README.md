@@ -130,7 +130,8 @@ A crucial part of the line search are within-batch estimates of the variance of 
 value and the gradient, see equations (17) and (18) in the [paper][1]. The variance
 of the objective is easily computed given the individual loss values for the examples
 in the batch. That is why we pass the vector of ``losses``, instead of a mean ``loss``.
-Computing the gradient variance is a little tricky; a detailed explanation can be found in the following note: (coming soon...).
+Computing the gradient variance is a little tricky; a detailed explanation can be found in this [note][2].
 For the implementation, see ``probls.tensorflow_interface.gradient_moment``.
 
 [1]: https://arxiv.org/abs/1502.02846
+[2]: https://drive.google.com/open?id=0B0adgqwcMJK5aDNaQ2Q4ZmhCQzA
