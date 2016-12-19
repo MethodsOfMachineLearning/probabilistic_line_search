@@ -33,7 +33,7 @@ opt_interface = ProbLSOptimizerSGDInterface()
 opt_interface.minimize(losses, variables)
 sess = tf.Session()
 opt_interface.register_session(sess)
-sess.run(tf.initialize_all_variables())
+sess.run(tf.global_variables_initializer())
 opt_ls = ProbLSOptimizer(opt_interface, cW=0.3, c1=0.05, target_df=0.5,
                          df_lo=-0.1, df_hi=1.1, expl_policy="linear",
                          fpush=1.0, max_change_factor=10., max_steps=10,

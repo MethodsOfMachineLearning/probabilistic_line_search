@@ -37,7 +37,7 @@ opt_ls = ProbLSOptimizer(opt_interface, alpha0=1e-3, cW=0.3, c1=0.05,
 
 # Initialize variables and start queues
 coord = tf.train.Coordinator()
-sess.run(tf.initialize_all_variables())
+sess.run(tf.global_variables_initializer())
 threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
 # Run ProbLS

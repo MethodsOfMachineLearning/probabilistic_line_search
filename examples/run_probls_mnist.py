@@ -15,8 +15,8 @@ from probls.tensorflow_interface.interface_sgd import ProbLSOptimizerSGDInterfac
 from probls.line_search import ProbLSOptimizer
 
 #### Specify training specifics here ##########################################
-#from models import mnist_2conv_2dense as model # Comment/uncomment to chose
-from models import mnist_mlp as model           # the model to run 
+from models import mnist_2conv_2dense as model # Comment/uncomment to chose
+#from models import mnist_mlp as model           # the model to run 
 num_steps = 4000
 batch_size = 256
 ###############################################################################
@@ -36,7 +36,7 @@ opt_ls = ProbLSOptimizer(opt_interface, alpha0=1e-3, cW=0.3, c1=0.05,
     max_change_factor=10., max_steps=10, max_expl=10, max_dmu0=0.0)
 
 # Initialize variables
-sess.run(tf.initialize_all_variables())
+sess.run(tf.global_variables_initializer())
 
 # Run ProbLS
 batch = mnist.train.next_batch(batch_size)
