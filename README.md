@@ -18,7 +18,7 @@ size, implied by the GP, exceeds a certain threshold.
 No installation is required, just clone this git repositiory to your machine.
 
 Requirements:
-- tensorflow (0.10.0 is known to work)
+- tensorflow (0.12.0 is known to work)
 - numpy (1.11.2 is known to work)
 - scipy (0.13.3 is known to work)
 - Some of the demo scripts require additional packages, like sys, os, matplotlib
