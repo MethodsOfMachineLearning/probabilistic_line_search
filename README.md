@@ -1,8 +1,8 @@
-#Probabilistic Line Search
+# Probabilistic Line Search
 
 This is a Python implementation of a [Probabilistic Line Search for Stochastic
 Optimization][1] plus a TensorFlow interface that allows you to use the line
-search to train your TensorFlow model. **This an early development version!**
+search to train your TensorFlow model. **Please note: this is a development version with multiple experimental changes compared to the original paper!**
 
 ## The Algorithm in a Nutshell
 The probabilistic line search is an algorithm for the optimization of a
