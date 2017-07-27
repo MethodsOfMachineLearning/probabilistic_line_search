@@ -1,7 +1,7 @@
 # Probabilistic Line Search
 
-This is a Python implementation of a [Probabilistic Line Search for Stochastic
-Optimization][1] plus a TensorFlow interface that allows you to use the line
+This is a Python implementation of a _Probabilistic Line Searches for Stochastic
+Optimization_ ([NIPS paper][1], [extended version][3]) plus a TensorFlow interface that allows you to use the line
 search to train your TensorFlow model. **Please note: this is a development version with multiple experimental changes compared to the original paper!**
 
 ## The Algorithm in a Nutshell
@@ -135,3 +135,4 @@ For the implementation, see ``probls.tensorflow_interface.gradient_moment``.
 
 [1]: https://arxiv.org/abs/1502.02846
 [2]: https://drive.google.com/open?id=0B0adgqwcMJK5aDNaQ2Q4ZmhCQzA
+[3]: https://arxiv.org/abs/1703.10034
